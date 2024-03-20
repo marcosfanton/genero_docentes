@@ -2,8 +2,6 @@
 library(tidyverse)
 library(here)
 library(genderBR) # Dicionário de nomes e gênero
-library(stringi)
-library(textclean)
 
 # Unificação dos bancos 2004 - 2022 ####
 # Banco 2004-2012
@@ -92,4 +90,96 @@ banco1822 <- purrr::map_dfr(list.files(path = "dados/capes/",
   filter(NM_AREA_AVALIACAO == "FILOSOFIA") |> 
   mutate(CD_CONCEITO_PROGRAMA = as.factor(CD_CONCEITO_PROGRAMA))
 
-teste <- bind_rows(banco0412, banco1316, banco17)
+dados <- bind_rows(banco0412, banco1316, banco17) |> 
+  mutate(CD_CONCEITO_PROGRAMA = as.factor(CD_CONCEITO_PROGRAMA)) |> 
+  bind_rows(banco1822) |> 
+  mutate(GENERO = genderBR::get_gender(NM_DOCENTE))
+
+# Seleção dos nomes sem gênero atribuído - n: 1275
+semgenero <- dados |>  
+  filter(is.na(GENERO)) |> # Filtra NAs do nome do orientador
+  distinct(NM_DOCENTE)   # Mantêm apenas os nomes únicos
+
+# Vetor para mulheres
+mulheres <- c("FRANCIONE CHARAPA ALVES",
+              "ALCIONE ROBERTO ROANI",
+              "NELSI KISTEMACHER WELTER",
+              "FILLIPA CARNEIRO SILVEIRA",
+              "TAYNAM SANTOS LUZ BUENO",
+              "SELOUA LUSTE BOULBINA",
+              "MOJCA KUPLEN",
+              "FÁTIMA REGINA RODRIGUES EVORA",
+              "OLGARIA CHAIN FERES MATOS",
+              "NELCI DO NASCIMENTO GONÇALVES",
+              "ZÉLIA MARIA DANTAS DE OLIVEIRA",
+              "ÂNGELA MARIA PAIVA CRUZ",
+              "CECÍLIA MARIA PINTO PIRES",
+              "ELNÔRA MARIA GONDIM MACHADO LIMA",
+              "ROSARIO PECORARO",
+              "ACYLENE MARIA CABRAL FERREIRA",
+              "MÁRCIA SÁ CAVALCANTE SCHUBACK",
+              "KÁTIA RODRIGUES MURICY",
+              "DÉBORAH DANOWSKI",
+              "MÁRCIA CRISTINA FERREIRA GONÇALVES",
+              "LÍVIA MARA GUIMARÃES",
+              "MÍRIAM CAMPOLINA DINIZ PEIXOTO",
+              "CÍNTIA VIEIRA DA SILVA",
+              "ANDRÉA MARIA ALTINO DE CAMPOS LOPARIC",
+              "DÉBORA CRISTINA MORATO PINTO",
+              "PATRÍCIA CORADIM SITA",
+              "ANDRÉA LUISA BUCCHILE FAGGION",
+              "SÔNIA TERESINHA FELIPE",
+              "CLÁUDIA PELLEGRINI DRUCKER")
+
+# Vetor para homens
+homens <- semgenero %>%
+  filter(!NM_DOCENTE %in% mulheres) |> # Filtra os nomes de mulheres
+  pull() # Extrai vetor de nomes 
+
+# Atribuição de gênero para os casos correspondentes no restante do banco
+dados <- dados |> 
+  mutate(
+    GENERO = case_when(
+      NM_DOCENTE %in% mulheres ~ "Female", 
+      NM_DOCENTE %in% homens ~ "Male", 
+      TRUE ~ GENERO # Preserva os valores correspondentes nos demais casos
+    )) |> 
+  mutate(GENERO = str_replace_all(GENERO, 
+                           pattern = c("Male" = "Homem",
+                                       "Female" = "Mulher"))) |> 
+  select(!NM_AREA_AVALIACAO) 
+
+# Salvar banco limpo
+dados |>
+  readr::write_csv("dados/dados_docentes.csv")
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
