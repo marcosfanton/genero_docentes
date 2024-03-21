@@ -140,6 +140,23 @@ homens <- semgenero %>%
   filter(!NM_DOCENTE %in% mulheres) |> # Filtra os nomes de mulheres
   pull() # Extrai vetor de nomes 
 
+# Tabela Docente - Gênero####
+docentes <- dados |> 
+  distinct(NM_DOCENTE, .keep_all = TRUE) |> 
+  select(NM_DOCENTE, GENERO)
+
+# Rotular atribuição errônea de gênero
+homem <- c("GABRIELE CORNELLI", #51
+           "NOELI DUTRA ROSSATTO", #133
+           "ROSARIO PECORARO", #738
+           "HENNY ANDRE LUCRECE BLOMME") #1251
+
+mulher <- c("OLGÁRIA CHAIN FÉRES MATOS", #295
+            "OTÍLIA BEATRIZ FIORI ARANTES", #384
+            "IRLEY FERNANDES FRANCO", #537
+            "CLÁUDIA PEREIRA DO CARMO MURTA", #571
+            "SÍLVIA FAUSTINO DE ASSIS SAES") #610
+
 # Atribuição de gênero para os casos correspondentes no restante do banco
 dados <- dados |> 
   mutate(
@@ -158,6 +175,20 @@ dados <- dados |>
                                   pattern = c("Male" = "Homem",
                                               "Female" = "Mulher"))) |> 
   select(!NM_AREA_AVALIACAO)  
+
+
+
+# Salvar banco limpo
+docentes |>
+  readr::write_csv("dados/dados_docente-genero.csv")
+
+# Rotular corretamente gênero 
+
+homem_novo <- 
+
+
+
+
   
 # Nome de PPGS --> ver arquivo docentes_nome-ppgs.R
 dados <- dados |> 
