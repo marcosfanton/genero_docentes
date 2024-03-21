@@ -13,7 +13,7 @@ banco0412 <- read.csv2("dados/capes/docente_04-12.csv",
          CS_STATUS_JURIDICO,
          NM_REGIAO_ENTIDADE,
          SG_UF_ENTIDADE_ENSINO,
-         NM_PROGRAMA_IES,
+         CD_PROGRAMA_IES,
          NM_MODALIDADE_PROGRAMA,
          NM_AREA_AVALIACAO,
          NM_DOCENTE,
@@ -39,7 +39,7 @@ banco1316 <- purrr::map_dfr(list.files(path = "dados/capes/",
          CS_STATUS_JURIDICO,
          NM_REGIAO,
          SG_UF_PROGRAMA,
-         NM_PROGRAMA_IES,
+         CD_PROGRAMA_IES,
          NM_MODALIDADE_PROGRAMA,
          NM_AREA_AVALIACAO,
          NM_DOCENTE,
@@ -60,7 +60,7 @@ banco17 <- read.csv2("dados/capes/docente_17.csv",
          CS_STATUS_JURIDICO,
          NM_REGIAO,
          SG_UF_PROGRAMA,
-         NM_PROGRAMA_IES,
+         CD_PROGRAMA_IES,
          NM_MODALIDADE_PROGRAMA,
          NM_AREA_AVALIACAO,
          NM_DOCENTE,
@@ -82,7 +82,7 @@ banco1822 <- purrr::map_dfr(list.files(path = "dados/capes/",
          CS_STATUS_JURIDICO,
          NM_REGIAO,
          SG_UF_PROGRAMA,
-         NM_PROGRAMA_IES,
+         CD_PROGRAMA_IES,
          NM_MODALIDADE_PROGRAMA,
          NM_AREA_AVALIACAO,
          NM_DOCENTE,
@@ -151,6 +151,7 @@ dados <- dados |>
   mutate(across((where(is.character) & !matches(c("SG_ENTIDADE_ENSINO", 
                                                   "NM_REGIAO",
                                                   "SG_UF_PROGRAMA",
+                                                  "CD_PROGRAMA_IES",
                                                   "CD_CAT_BOLSA_PRODUTIVIDADE"))),
                 ~str_to_title(.)),
          GENERO = str_replace_all(GENERO, 
@@ -158,6 +159,12 @@ dados <- dados |>
                                               "Female" = "Mulher"))) |> 
   select(!NM_AREA_AVALIACAO)  
   
+# Nome de PPGS --> ver arquivo docentes_nome-ppgs.R
+dados <- dados |> 
+  mutate(NM_PROGRAMA = paste(SG_ENTIDADE_ENSINO, 
+                             "(", CD_PROGRAMA_IES, ")", 
+                             sep = ""))
+
 # Salvar banco limpo
 dados |>
   readr::write_csv("dados/dados_docentes.csv")
