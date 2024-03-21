@@ -9,6 +9,15 @@ dados <- read.csv("dados/dados_docentes.csv") |>
   mutate_if(is.character, as.factor) |> 
   filter(AN_BASE == 2022) # & DS_CATEGORIA_DOCENTE == "Permanente"
 
+# Tabela Docente - Gênero####
+docentes <- dados |> 
+  distinct(NM_DOCENTE, .keep_all = TRUE) |> 
+  select(NM_DOCENTE, GENERO)
+
+# Salvar banco limpo
+docentes |>
+  readr::write_csv("dados/dados_docente-genero.csv")
+
 # Gráfico 01 - Evolução Docentes Permanentes####
 dados |> 
 #  drop_na(CD_CONCEITO_PROGRAMA) |> 
