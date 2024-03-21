@@ -94,12 +94,23 @@ banco1822 <- purrr::map_dfr(list.files(path = "dados/capes/",
   filter(NM_AREA_AVALIACAO == "FILOSOFIA") |> 
   mutate(CD_CONCEITO_PROGRAMA = as.factor(CD_CONCEITO_PROGRAMA))
 
+# Junção
 dados <- bind_rows(banco0412, banco1316, banco17) |> 
   mutate(CD_CONCEITO_PROGRAMA = as.factor(CD_CONCEITO_PROGRAMA)) |> 
   bind_rows(banco1822) |> 
   mutate(GENERO = genderBR::get_gender(NM_DOCENTE))
 
-# Seleção dos nomes sem gênero atribuído - n: 1275
+# Rotulação de Gênero####
+# Tabela Docente - Gênero
+docentes <- dados |> 
+  distinct(NM_DOCENTE, .keep_all = TRUE) |> 
+  select(NM_DOCENTE, GENERO)
+
+# Salvar banco limpo
+docentes |>
+  readr::write_csv("dados/dados_docente-genero_raw.csv")
+
+# Seleção dos nomes sem gênero atribuído - n: 1275 + gêneros incorretos
 semgenero <- dados |>  
   filter(is.na(GENERO)) |> # Filtra NAs do nome do orientador
   distinct(NM_DOCENTE)   # Mantêm apenas os nomes únicos
@@ -133,29 +144,22 @@ mulheres <- c("FRANCIONE CHARAPA ALVES",
               "PATRÍCIA CORADIM SITA",
               "ANDRÉA LUISA BUCCHILE FAGGION",
               "SÔNIA TERESINHA FELIPE",
-              "CLÁUDIA PELLEGRINI DRUCKER")
+              "CLÁUDIA PELLEGRINI DRUCKER",
+              "OLGÁRIA CHAIN FÉRES MATOS", #295. ---> nomes com erro de gênero
+              "OTÍLIA BEATRIZ FIORI ARANTES", #384
+              "IRLEY FERNANDES FRANCO", #537
+              "CLÁUDIA PEREIRA DO CARMO MURTA", #571
+              "SÍLVIA FAUSTINO DE ASSIS SAES") #610)
 
 # Vetor para homens
-homens <- semgenero %>%
+homens <- semgenero |> 
   filter(!NM_DOCENTE %in% mulheres) |> # Filtra os nomes de mulheres
-  pull() # Extrai vetor de nomes 
-
-# Tabela Docente - Gênero####
-docentes <- dados |> 
-  distinct(NM_DOCENTE, .keep_all = TRUE) |> 
-  select(NM_DOCENTE, GENERO)
-
-# Rotular atribuição errônea de gênero
-homem <- c("GABRIELE CORNELLI", #51
-           "NOELI DUTRA ROSSATTO", #133
-           "ROSARIO PECORARO", #738
-           "HENNY ANDRE LUCRECE BLOMME") #1251
-
-mulher <- c("OLGÁRIA CHAIN FÉRES MATOS", #295
-            "OTÍLIA BEATRIZ FIORI ARANTES", #384
-            "IRLEY FERNANDES FRANCO", #537
-            "CLÁUDIA PEREIRA DO CARMO MURTA", #571
-            "SÍLVIA FAUSTINO DE ASSIS SAES") #610
+  pull() |>  # Extrai vetor de nomes 
+  c("GABRIELE CORNELLI", #51   ----> Nomes com erro de gênero 
+    "NOELI DUTRA ROSSATTO", #133
+    "ROSARIO PECORARO", #738
+    "HENNY ANDRE LUCRECE BLOMME", #1251
+    "CLARIDES HENRICH DE BARBA") #1619
 
 # Atribuição de gênero para os casos correspondentes no restante do banco
 dados <- dados |> 
@@ -176,20 +180,15 @@ dados <- dados |>
                                               "Female" = "Mulher"))) |> 
   select(!NM_AREA_AVALIACAO)  
 
-
+# Tabela docentes
+docentes_corrigido <- dados |> 
+  distinct(NM_DOCENTE, .keep_all = TRUE) |> 
+  select(NM_DOCENTE, GENERO)
 
 # Salvar banco limpo
-docentes |>
+docentes_corrigido |>
   readr::write_csv("dados/dados_docente-genero.csv")
 
-# Rotular corretamente gênero 
-
-homem_novo <- 
-
-
-
-
-  
 # Nome de PPGS --> ver arquivo docentes_nome-ppgs.R
 dados <- dados |> 
   mutate(NM_PROGRAMA = paste(SG_ENTIDADE_ENSINO, 
@@ -199,34 +198,4 @@ dados <- dados |>
 # Salvar banco limpo
 dados |>
   readr::write_csv("dados/dados_docentes.csv")
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
+   
