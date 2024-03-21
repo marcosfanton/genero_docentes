@@ -2,20 +2,19 @@
 library(tidyverse)
 library(here)
 library(ggtext)
+library(gt)
+
 
 # Banco 
 dados <- read.csv("dados/dados_docentes.csv") |> 
-  mutate(across((where(is.character) & !matches(c("SG_ENTIDADE_ENSINO", "NM_REGIAO", "SG_UF_PROGRAMA"))),
-                ~str_to_title(.))) |> 
-  mutate_if(is.character, as.factor) 
+  mutate_if(is.character, as.factor) |> 
+  filter(AN_BASE == 2022 & DS_CATEGORIA_DOCENTE == "Permanente")
 
 # Evolução Tempo - Total ####
 dados_tempo <- dados |> 
   group_by(SG_UF_PROGRAMA,   GENERO) |> 
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2))
-
-?mutate_if
 
 # Gráfico 01 - Evolução Docentes Permanentes####
 dados |> 
@@ -53,7 +52,7 @@ ggsave(
 # TABELA 01 #####
 # Tabela REGIÃO 
 regiao <- dados |> 
-  group_by(NM_REGIAO) |> 
+  group_by(NM_REGIAO, GENERO) |> 
   summarize(total = n()) |> 
   mutate(NM_REGIAO = recode(NM_REGIAO,
                             "NORTE" = "Norte",
@@ -72,7 +71,8 @@ estatuto <- dados |>
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2),
          variavel = "Estatuto Jurídico") |> 
-  arrange(desc(total)) 
+  arrange(desc(total)) |> 
+  rename(categorias = CS_STATUS_JURIDICO) 
 
 # Tabela MODALIDADE 
 modalidade <- dados |> 
@@ -80,7 +80,8 @@ modalidade <- dados |>
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2),
          variavel = "Modalidade") |> 
-  arrange(desc(total)) 
+  arrange(desc(total)) |> 
+  rename(categorias = NM_MODALIDADE_PROGRAMA) 
 
 # Tabela CATEGORIA 
 categoria <- dados |> 
@@ -88,7 +89,8 @@ categoria <- dados |>
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2),
          variavel = "Categoria") |> 
-  arrange(desc(total)) 
+  arrange(desc(total)) |> 
+  rename(categorias = DS_CATEGORIA_DOCENTE) 
 
 # Tabela CONCEITO 
 categoria <- dados |> 
@@ -96,5 +98,88 @@ categoria <- dados |>
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2),
          variavel = "Conceito") |> 
-  arrange(desc(total)) 
+  arrange(desc(total)) |> 
+  rename(categorias = CD_CONCEITO_PROGRAMA) 
 
+# Tabela BOLSA PQ 
+bolsa <- dados |> 
+  group_by(CD_CAT_BOLSA_PRODUTIVIDADE, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Bolsa PQ") |> 
+  arrange(desc(total)) |> 
+  rename(categorias = CD_CAT_BOLSA_PRODUTIVIDADE) 
+
+# Junção das tabelas 
+tabela1 <- bind_rows(regiao,
+                     modalidade,
+                     estatuto,
+                     categoria,
+                     bolsa) 
+
+
+teste <- tabela1 |> tidyr::pivot_wider(names_from = "GENERO", values_from = c("total", "frequencia"), 
+                   names_glue = "{GENERO}_{.value}")
+
+
+
+# Construção da TABELA 1#### 
+#tab1 <- 
+teste |> 
+gt(groupname_col = "variavel",
+   rowname_col = "categorias") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2})") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2})") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+  tab_spanner(
+    label = "Gênero | N (%)",
+    columns = c(Homem_total, Homem_frequencia, Mulher_total, Mulher_frequencia))  |> 
+  fmt_number(
+    drop_trailing_zeros = TRUE,
+    decimals = 2,
+    sep_mark = ".",
+    dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 1:** Descrição de Docentes Permanentes em PPGs de Filosofia (2022) | N: 1.128")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 5
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_width(categorias ~ px(200),
+             variavel ~ px(80),
+             Homem_total ~ px(80),
+             Mulher_total ~ px(80)) |>  
+ # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(12),
+              table.font.size = px(12),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")

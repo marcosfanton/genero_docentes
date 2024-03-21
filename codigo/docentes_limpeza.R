@@ -25,7 +25,8 @@ banco0412 <- read.csv2("dados/capes/docente_04-12.csv",
          NM_REGIAO = NM_REGIAO_ENTIDADE,
          NM_AREA_BASICA_TITULACAO= NM_AREA_CONHEC_FORM_DOCENTE,
          DS_TIPO_VINCULO_DOCENTE_IES = DS_TIPO_NATUR_VINCULO_DOCENTE) |> 
-  mutate(CD_CONCEITO_PROGRAMA = NA)
+  mutate(CD_CONCEITO_PROGRAMA = NA,
+         CD_CAT_BOLSA_PRODUTIVIDADE = NA)
 
 # Banco 2013 - 2016
 banco1316 <- purrr::map_dfr(list.files(path = "dados/capes/", 
@@ -45,7 +46,8 @@ banco1316 <- purrr::map_dfr(list.files(path = "dados/capes/",
          DS_CATEGORIA_DOCENTE,
          DS_TIPO_VINCULO_DOCENTE_IES,
          NM_AREA_BASICA_TITULACAO,
-         CD_CONCEITO_PROGRAMA) |> 
+         CD_CONCEITO_PROGRAMA,
+         CD_CAT_BOLSA_PRODUTIVIDADE) |> 
   filter(NM_AREA_AVALIACAO == "FILOSOFIA/TEOLOGIA:SUBCOMISSÃO FILOSOFIA"
          |NM_AREA_AVALIACAO == "FILOSOFIA")
 
@@ -65,7 +67,8 @@ banco17 <- read.csv2("dados/capes/docente_17.csv",
          DS_CATEGORIA_DOCENTE,
          DS_TIPO_VINCULO_DOCENTE_IES,
          NM_AREA_BASICA_TITULACAO,
-         CD_CONCEITO_PROGRAMA) |> 
+         CD_CONCEITO_PROGRAMA,
+         CD_CAT_BOLSA_PRODUTIVIDADE) |> 
   filter(NM_AREA_AVALIACAO == "FILOSOFIA")
 
 # Banco 1822
@@ -86,7 +89,8 @@ banco1822 <- purrr::map_dfr(list.files(path = "dados/capes/",
          DS_CATEGORIA_DOCENTE,
          DS_TIPO_VINCULO_DOCENTE_IES,
          NM_AREA_BASICA_TITULACAO,
-         CD_CONCEITO_PROGRAMA) |> 
+         CD_CONCEITO_PROGRAMA,
+         CD_CAT_BOLSA_PRODUTIVIDADE) |> 
   filter(NM_AREA_AVALIACAO == "FILOSOFIA") |> 
   mutate(CD_CONCEITO_PROGRAMA = as.factor(CD_CONCEITO_PROGRAMA))
 
@@ -144,11 +148,16 @@ dados <- dados |>
       NM_DOCENTE %in% homens ~ "Male", 
       TRUE ~ GENERO # Preserva os valores correspondentes nos demais casos
     )) |> 
-  mutate(GENERO = str_replace_all(GENERO, 
-                           pattern = c("Male" = "Homem",
-                                       "Female" = "Mulher"))) |> 
-  select(!NM_AREA_AVALIACAO) 
-
+  mutate(across((where(is.character) & !matches(c("SG_ENTIDADE_ENSINO", 
+                                                  "NM_REGIAO",
+                                                  "SG_UF_PROGRAMA",
+                                                  "CD_CAT_BOLSA_PRODUTIVIDADE"))),
+                ~str_to_title(.)),
+         GENERO = str_replace_all(GENERO, 
+                                  pattern = c("Male" = "Homem",
+                                              "Female" = "Mulher"))) |> 
+  select(!NM_AREA_AVALIACAO)  
+  
 # Salvar banco limpo
 dados |>
   readr::write_csv("dados/dados_docentes.csv")
