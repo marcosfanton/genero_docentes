@@ -1,15 +1,17 @@
 ---
-title: "Relatório sobre Desigualdade de Gênero entre Docentes de PPGs em Filosofia"
-author: "Dataphilo"
+title: "Relatório sobre desigualdade de gênero entre docentes de PPGs em Filosofia"
+author: "Dataphilo (Carolina Araújo, Fernando de Sá Moreira, Hugo Mota, Marcos Fanton, Mitieli Seixas da Silva)"
 date: "2024-03-22"
 output: html_document
 ---
 
-### Banco de Dados
+### Apresentação
 
-Esse relatório foi realizado com o intuito de subsidiar as decisões sobre políticas e metas de igualdade de gênero na pós-graduação em filosofia para a próxima quadrienal. Os bancos utilizados encontram-se disponíveis no Portal CAPES - Dados Abertos ("Docentes da Pós-Graduação *strictu sensu* no Brasil).
+Este relatório foi elaborado com o intuito de subsidiar as discussões e decisões da Comissão de Ficha de Avaliação da Filosofia sobre políticas e metas de paridade de gênero na pós-graduação para a próxima avaliação da CAPES.
+Foram utilizados os bancos de docentes da Pós-Graduação, disponíveis no Portal CAPES - Dados Abertos ("Docentes da Pós-Graduação *strictu sensu* no Brasil").
+A variável gênero foi criada através uma classificação automatizada de gênero pelo cruzamento do primeiro nome dos autores (pacote genderBR, de Fernando Meireles, 2021). Após a rotulação, a classificação do gênero dos docentes foi revisada manualmente pelos autores. 
 
-O repositório com a organização e limpeza do banco, bem como com a análise descritiva pode ser acessado aqui: <https://github.com/marcosfanton/genero_docentes>.
+Todo relatório foi produzido no software R (versão 4.3.1). O código utilizado para a limpeza e a análise dos dados, bem como para elaboração das figuras e tabelas deste relatório estão disponíveis no seguinte endereço: <https://github.com/marcosfanton/genero_docentes>.
 
 ### Evolução da desigualdade de gênero entre docentes de PPGs
 ```{r setup, include=FALSE}
@@ -32,6 +34,7 @@ dados |>
   geom_bar(position = "fill")  +
   scale_x_continuous(limits = c(2003, 2023)) +
   scale_y_continuous(labels=scales::percent, position = "right") +
+  geom_hline(yintercept=0.2, linetype="dashed") +
   scale_fill_manual(values = c("Homem" = "#59106e",
                                "Mulher" = "#d24644")) +
   theme_classic() +
@@ -49,11 +52,11 @@ dados |>
 
 ### Tabela 1 - Descrição dos docentes (2022)
 
-Tabela 1a. Total
+**Tabela 1a.** Total
 
-Tabela 1b. Docentes Permanentes de PPGs Acadêmicos
+**Tabela 1b.** Docentes Permanentes de PPGs Acadêmicos
 
-Tabela 1c. Docentes Permanentes de PPGs Profissionais
+**Tabela 1c.** Docentes Permanentes de PPGs Profissionais
 
 ```{r}
 # TABELA 01A #####
@@ -423,9 +426,9 @@ gt(groupname_col = "variavel",
 
 ### Tabela 2 - Desigualdade de gênero nos PPGs (2022)
 
-Tabela 2a. Docentes Permanentes de PPGs Acadêmicos
+**Tabela 2a.** Docentes Permanentes de PPGs Acadêmicos
 
-Tabela 2b. Docentes Permanentes de PPGs Profissionais
+**Tabela 2b.** Docentes Permanentes de PPGs Profissionais
 
 ```{r}
 # TABELA 02a#### 
@@ -574,3 +577,5 @@ fmt_number(
   opt_table_lines("none")
 
 ```
+
+

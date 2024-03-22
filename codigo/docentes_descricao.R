@@ -13,7 +13,7 @@ dados <- read.csv("dados/dados_docentes.csv") |>
 # Gráfico 01 - Evolução Docentes Permanentes####
 dados |> 
 #  drop_na(CD_CONCEITO_PROGRAMA) |> 
-  filter(NM_MODALIDADE_PROGRAMA == "Acadêmico" & DS_CATEGORIA_DOCENTE == "Permanente") |> 
+#  filter(NM_MODALIDADE_PROGRAMA == "Acadêmico" & DS_CATEGORIA_DOCENTE == "Permanente") |> 
   ggplot(aes(x = AN_BASE, 
              fill = GENERO)) +
   geom_bar(position = "fill")  +
