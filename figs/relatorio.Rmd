@@ -1,20 +1,20 @@
 ---
-title: "Desigualdade de Gênero de Docentes de PPGs em Filosofia"
+title: "Relatório sobre Desigualdade de Gênero entre Docentes de PPGs em Filosofia"
 author: "Dataphilo"
-format: html
-editor: visual
-execute:
-  echo: false
-  warning: false
+date: "2024-03-22"
+output: html_document
 ---
 
-## Banco de Dados
+### Banco de Dados
 
 Esse relatório foi realizado com o intuito de subsidiar as decisões sobre políticas e metas de igualdade de gênero na pós-graduação em filosofia para a próxima quadrienal. Os bancos utilizados encontram-se disponíveis no Portal CAPES - Dados Abertos ("Docentes da Pós-Graduação *strictu sensu* no Brasil).
 
 O repositório com a organização e limpeza do banco, bem como com a análise descritiva pode ser acessado aqui: <https://github.com/marcosfanton/genero_docentes>.
 
-## Evolução da desigualdade de gênero entre docentes de PPGs
+### Evolução da desigualdade de gênero entre docentes de PPGs
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, error = FALSE)
+```
 
 ```{r}
 library(tidyverse)
@@ -47,7 +47,7 @@ dados |>
         text = element_text(size = 12)) 
 ```
 
-## Tabela 1 - Descrição dos docentes (2022)
+### Tabela 1 - Descrição dos docentes (2022)
 
 Tabela 1a. Total
 
@@ -421,7 +421,7 @@ gt(groupname_col = "variavel",
 
 ```
 
-## Tabela 2 - Desigualdade de gênero nos PPGs (2022)
+### Tabela 2 - Desigualdade de gênero nos PPGs (2022)
 
 Tabela 2a. Docentes Permanentes de PPGs Acadêmicos
 
