@@ -1,0 +1,576 @@
+---
+title: "Desigualdade de Gênero nos PPGs de Filosofia"
+author: "Dataphilo"
+format: html
+editor: visual
+execute:
+  echo: false
+  warning: false
+---
+
+## Banco de Dados
+
+Esse relatório foi realizado com o intuito de subsidiar as decisões sobre políticas e metas de igualdade de gênero na pós-graduação em filosofia para a próxima quadrienal. Os bancos utilizados encontram-se disponíveis no Portal CAPES - Dados Abertos ("Docentes da Pós-Graduação *strictu sensu* no Brasil).
+
+O repositório com a organização e limpeza do banco, bem como com a análise descritiva pode ser acessado aqui: <https://github.com/marcosfanton/genero_docentes>.
+
+## Evolução da desigualdade de gênero entre docentes de PPGs
+
+```{r}
+library(tidyverse)
+library(here)
+library(ggtext)
+library(gt)
+
+dados <- read.csv(here("dados", "dados_docentes.csv")) |> 
+  mutate_if(is.character, as.factor)
+
+# Gráfico 01 - Evolução Docentes Permanentes####
+dados |>  
+  ggplot(aes(x = AN_BASE, 
+             fill = GENERO)) +
+  geom_bar(position = "fill")  +
+  scale_x_continuous(limits = c(2003, 2023)) +
+  scale_y_continuous(labels=scales::percent, position = "right") +
+  scale_fill_manual(values = c("Homem" = "#59106e",
+                               "Mulher" = "#d24644")) +
+  theme_classic() +
+  labs(x = "",
+       y = "",
+       fill = "",
+       title = "Proporção de Docentes em PPGs de Filosofia por Gênero",
+       subtitle = "**Período**: 1994-2022 | **N**: 13.294 | <span style= 'color:#59106e;'>**Homem**</span>: 79.66% - <span style= 'color:#d24644;'>**Mulher**</span>: 20.34%",
+       caption = "Elaboração: Dataphilo | Dados: CAPES") +
+  theme(plot.title = element_markdown(face = "bold", hjust = 0.5),  
+        plot.subtitle = element_markdown(hjust = 0.5),
+        legend.position = "none",
+        text = element_text(size = 12)) 
+```
+
+## Tabela 1 - Descrição dos docentes (2022)
+
+Tabela 1a. Total
+
+Tabela 1b. Docentes Permanentes de PPGs Acadêmicos
+
+Tabela 1c. Docentes Permanentes de PPGs Profissionais
+
+```{r}
+# TABELA 01A #####
+# Tabela REGIÃO 
+dados <- dados |> filter(AN_BASE == 2022)
+
+regiao <- dados |> 
+  group_by(NM_REGIAO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(NM_REGIAO = recode(NM_REGIAO,
+                            "NORTE" = "Norte",
+                            "NORDESTE" = "Nordeste",
+                            "CENTRO-OESTE" = "Centro-Oeste",
+                            "SUDESTE" = "Sudeste",
+                            "SUL" = "Sul"),
+         frequencia = round(total/sum(total)*100,2),
+         variavel = "Região") |> 
+    rename(categorias = NM_REGIAO) 
+
+# Tabela ESTATUTO JURÍDICO 
+estatuto <- dados |> 
+  group_by(CS_STATUS_JURIDICO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Estatuto") |> 
+  rename(categorias = CS_STATUS_JURIDICO) 
+
+# Tabela MODALIDADE 
+modalidade <- dados |> 
+  group_by(NM_MODALIDADE_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Modalidade") |> 
+  rename(categorias = NM_MODALIDADE_PROGRAMA) 
+
+# Tabela CATEGORIA 
+categoria <- dados |> 
+  group_by(DS_CATEGORIA_DOCENTE, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Categoria") |> 
+  rename(categorias = DS_CATEGORIA_DOCENTE) 
+
+# Tabela CONCEITO 
+conceito <- dados |> 
+  group_by(CD_CONCEITO_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Conceito") |> 
+  rename(categorias = CD_CONCEITO_PROGRAMA) 
+
+# Tabela BOLSA PQ 
+bolsa <- dados |> 
+  group_by(CD_CAT_BOLSA_PRODUTIVIDADE, GENERO) |> 
+  summarize(total = n()) |> 
+  rename(categorias = CD_CAT_BOLSA_PRODUTIVIDADE) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Bolsa PQ",
+         categorias = fct_na_value_to_level(categorias, "Sem Bolsa"))
+
+# Junção das tabelas 
+tabela1 <- bind_rows(regiao,
+                     categoria,
+                     modalidade,
+                     estatuto,
+                     conceito,
+                     bolsa) 
+
+# Deixa tabela no formato
+tabela1 <- tabela1 |> tidyr::pivot_wider(names_from = "GENERO", values_from = c("total", "frequencia"), 
+                   names_glue = "{GENERO}_{.value}")
+
+# Construção da TABELA 1#### 
+tabela1 |> 
+gt(groupname_col = "variavel",
+   rowname_col = "categorias") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2}%)") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2}%)") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+  fmt_number(
+    drop_trailing_zeros = TRUE,
+    decimals = 2,
+    sep_mark = ".",
+    dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 1a:** Descrição de Docentes em PPGs de Filosofia por Gênero (2022) | N: 1.350")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 2
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_align(
+    align = "center",
+    columns = c(Homem_total, Mulher_total)
+  ) |> 
+  cols_width(categorias ~ px(115),
+             variavel ~ px(80),
+             Homem_total ~ px(100),
+             Mulher_total ~ px(100)) |>  
+ # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(14),
+              table.font.size = px(14),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")
+
+```
+
+```{r}
+# TABELA 01B #####
+# Tabela REGIÃO 
+dadosacademico <- dados |> filter(AN_BASE == 2022 & DS_CATEGORIA_DOCENTE == "Permanente" & NM_MODALIDADE_PROGRAMA == "Acadêmico")
+
+regiao <- dadosacademico |> 
+  group_by(NM_REGIAO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(NM_REGIAO = recode(NM_REGIAO,
+                            "NORTE" = "Norte",
+                            "NORDESTE" = "Nordeste",
+                            "CENTRO-OESTE" = "Centro-Oeste",
+                            "SUDESTE" = "Sudeste",
+                            "SUL" = "Sul"),
+         frequencia = round(total/sum(total)*100,2),
+         variavel = "Região") |> 
+    rename(categorias = NM_REGIAO) 
+
+# Tabela ESTATUTO JURÍDICO 
+estatuto <- dadosacademico |> 
+  group_by(CS_STATUS_JURIDICO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Estatuto") |> 
+  rename(categorias = CS_STATUS_JURIDICO) 
+
+# Tabela CONCEITO 
+conceito <- dadosacademico |> 
+  group_by(CD_CONCEITO_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Conceito") |> 
+  rename(categorias = CD_CONCEITO_PROGRAMA) 
+
+# Tabela BOLSA PQ 
+bolsa <- dadosacademico |> 
+  group_by(CD_CAT_BOLSA_PRODUTIVIDADE, GENERO) |> 
+  summarize(total = n()) |> 
+  rename(categorias = CD_CAT_BOLSA_PRODUTIVIDADE) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Bolsa PQ",
+         categorias = fct_na_value_to_level(categorias, "Sem Bolsa"))
+
+# Junção das tabelas 
+tabela1b <- bind_rows(regiao,
+                     estatuto,
+                     conceito,
+                     bolsa) 
+
+# Deixa tabela no formato
+tabela1b <- tabela1b |> tidyr::pivot_wider(names_from = "GENERO", values_from = c("total", "frequencia"), 
+                   names_glue = "{GENERO}_{.value}")
+
+# Construção da TABELA 1#### 
+tabela1b |> 
+gt(groupname_col = "variavel",
+   rowname_col = "categorias") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2}%)") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2}%)") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+  fmt_number(
+    drop_trailing_zeros = TRUE,
+    decimals = 2,
+    sep_mark = ".",
+    dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 1b:** Descrição de Docentes Permanentes em PPGs Acadêmicos de Filosofia por Gênero (2022) | N: 904")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 2
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_align(
+    align = "center",
+    columns = c(Homem_total, Mulher_total)
+  ) |> 
+  cols_width(categorias ~ px(115),
+             variavel ~ px(80),
+             Homem_total ~ px(100),
+             Mulher_total ~ px(100)) |>  
+ # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(14),
+              table.font.size = px(14),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")
+
+```
+
+```{r}
+# TABELA 01C #####
+# Tabela REGIÃO 
+dadosprofi <- dados |> filter(AN_BASE == 2022 & DS_CATEGORIA_DOCENTE == "Permanente" & NM_MODALIDADE_PROGRAMA == "Profissional")
+
+regiao <- dadosprofi |> 
+  group_by(NM_REGIAO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(NM_REGIAO = recode(NM_REGIAO,
+                            "NORTE" = "Norte",
+                            "NORDESTE" = "Nordeste",
+                            "CENTRO-OESTE" = "Centro-Oeste",
+                            "SUDESTE" = "Sudeste",
+                            "SUL" = "Sul"),
+         frequencia = round(total/sum(total)*100,2),
+         variavel = "Região") |> 
+    rename(categorias = NM_REGIAO) 
+
+# Tabela ESTATUTO JURÍDICO 
+estatuto <- dadosprofi |> 
+  group_by(CS_STATUS_JURIDICO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Estatuto") |> 
+  rename(categorias = CS_STATUS_JURIDICO) 
+
+# Tabela CONCEITO 
+conceito <- dadosprofi |> 
+  group_by(CD_CONCEITO_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Conceito") |> 
+  rename(categorias = CD_CONCEITO_PROGRAMA) 
+
+# Tabela BOLSA PQ 
+bolsa <- dadosprofi |> 
+  group_by(CD_CAT_BOLSA_PRODUTIVIDADE, GENERO) |> 
+  summarize(total = n()) |> 
+  rename(categorias = CD_CAT_BOLSA_PRODUTIVIDADE) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Bolsa PQ",
+         categorias = fct_na_value_to_level(categorias, "Sem Bolsa"))
+
+# Junção das tabelas 
+tabela1c <- bind_rows(regiao,
+                     estatuto,
+                     conceito,
+                     bolsa) 
+
+# Deixa tabela no formato
+tabela1c <- tabela1c |> tidyr::pivot_wider(names_from = "GENERO", values_from = c("total", "frequencia"), 
+                   names_glue = "{GENERO}_{.value}")
+
+# Construção da TABELA 1#### 
+tabela1c |> 
+gt(groupname_col = "variavel",
+   rowname_col = "categorias") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2}%)") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2}%)") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+  fmt_number(
+    drop_trailing_zeros = TRUE,
+    decimals = 2,
+    sep_mark = ".",
+    dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 1c:** Descrição de Docentes em PPGs Profissionais de Filosofia por Gênero (2022) | N: 224")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 2
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_align(
+    align = "center",
+    columns = c(Homem_total, Mulher_total)
+  ) |> 
+  cols_width(categorias ~ px(115),
+             variavel ~ px(80),
+             Homem_total ~ px(100),
+             Mulher_total ~ px(100)) |>  
+ # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(14),
+              table.font.size = px(14),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")
+
+```
+
+## Tabela 2 - Desigualdade de gênero nos PPGs (2022)
+
+Tabela 2a. Docentes Permanentes de PPGs Acadêmicos
+
+Tabela 2b. Docentes Permanentes de PPGs Profissionais
+
+```{r}
+# TABELA 02a#### 
+tabela2a <- dados |> 
+  filter(NM_MODALIDADE_PROGRAMA == "Acadêmico" & DS_CATEGORIA_DOCENTE == "Permanente") |> 
+  group_by(NM_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2)) |> 
+  tidyr::pivot_wider(names_from = "GENERO",
+                     values_from = c("total", "frequencia"), 
+                     names_glue = "{GENERO}_{.value}") |> 
+  arrange(desc(Mulher_frequencia)) |> 
+  ungroup()
+
+# Construção Tabela 2
+tabela2a |> 
+  gt(rowname_col  = "NM_PROGRAMA") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2}%)") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2}%)") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+fmt_number(
+  drop_trailing_zeros = TRUE,
+  decimals = 2,
+  sep_mark = ".",
+  dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 2a.** Docentes Permanentes de PPGs Acadêmicos de Filosofia por Gênero (2022)")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 5
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_align(
+    align = "center",
+    columns = c(Homem_total, Mulher_total)
+  ) |> 
+  cols_width(NM_PROGRAMA ~ px(230),
+             Homem_total ~ px(100),
+             Mulher_total ~ px(100)) |>  
+  # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(12),
+              table.font.size = px(12),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")
+
+```
+
+```{r}
+# TABELA 02b#### 
+tabela2b <- dados |> 
+  filter(NM_MODALIDADE_PROGRAMA == "Profissional" & DS_CATEGORIA_DOCENTE == "Permanente") |> 
+  group_by(NM_PROGRAMA, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2)) |> 
+  tidyr::pivot_wider(names_from = "GENERO",
+                     values_from = c("total", "frequencia"), 
+                     names_glue = "{GENERO}_{.value}") |> 
+  arrange(desc(Mulher_frequencia)) |> 
+  ungroup()
+
+# Construção Tabela 2
+tabela2b |> 
+  gt(rowname_col  = "NM_PROGRAMA") |> 
+  cols_merge(
+    columns = c(Homem_total, Homem_frequencia),
+    pattern = "{1} ({2}%)") |>  
+  cols_merge(
+    columns = c(Mulher_total, Mulher_frequencia),
+    pattern = "{1} ({2}%)") |> 
+  cols_label(
+    Homem_total = "Homem",
+    Mulher_total = "Mulher") |> 
+fmt_number(
+  drop_trailing_zeros = TRUE,
+  decimals = 2,
+  sep_mark = ".",
+  dec_mark = ",") |>   
+  tab_header(
+    title = md("**Tabela 2b.** Docentes Permanentes de PPGs Profissionais de Filosofia por Gênero (2022)")
+  ) |> 
+  tab_source_note(
+    source_note = "Elaboração: Dataphilo. Dados: CAPES."
+  ) |> 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_stub_indent(
+    rows = everything(),
+    indent = 5
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()) |> 
+  sub_missing(
+    columns = everything(),
+    rows = everything(),
+    missing_text = "0"
+  )  |> 
+  cols_align(
+    align = "center",
+    columns = c(Homem_total, Mulher_total)
+  ) |> 
+  cols_width(NM_PROGRAMA ~ px(230),
+             Homem_total ~ px(100),
+             Mulher_total ~ px(100)) |>  
+  # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_options(heading.title.font.size = px(12),
+              table.font.size = px(12),
+              row_group.padding = px(1),
+              data_row.padding =  px(1.5),
+              source_notes.font.size = px(10)) |> 
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_title()) |>
+  tab_style(
+    cell_borders(sides = c("bottom", "top"), color = "black"),
+    locations = cells_source_notes()) |> 
+  opt_table_lines("none")
+
+```

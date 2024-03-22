@@ -167,8 +167,16 @@ dados <- dados |>
     GENERO = case_when(
       NM_DOCENTE %in% mulheres ~ "Female", 
       NM_DOCENTE %in% homens ~ "Male", 
-      TRUE ~ GENERO # Preserva os valores correspondentes nos demais casos
-    )) |> 
+      TRUE ~ GENERO), # Preserva os valores correspondentes nos demais casos
+    FORMACAO = case_when(
+      NM_AREA_BASICA_TITULACAO %in% c("EPISTEMOLOGIA",
+                                      "ÉTICA",
+                                      "FILOSOFIA",
+                                      "FILOSOFIA BRASILEIRA",
+                                      "LÓGICA",
+                                      "HISTÓRIA DA FILOSOFIA") ~ "Filosofia",
+    TRUE ~ "Outras Áreas")
+    ) |> 
   mutate(across((where(is.character) & !matches(c("SG_ENTIDADE_ENSINO", 
                                                   "NM_REGIAO",
                                                   "SG_UF_PROGRAMA",

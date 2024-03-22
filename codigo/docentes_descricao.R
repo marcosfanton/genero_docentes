@@ -7,7 +7,7 @@ library(gt)
 # Banco 
 dados <- read.csv("dados/dados_docentes.csv") |> 
   mutate_if(is.character, as.factor) |> 
-  filter(AN_BASE == 2022) # & DS_CATEGORIA_DOCENTE == "Permanente"
+  filter(AN_BASE == 2022)
 
 
 # Gráfico 01 - Evolução Docentes Permanentes####
@@ -25,18 +25,17 @@ dados |>
   labs(x = "",
        y = "",
        fill = "",
-       title = "Proporção de Docentes Permanentes em PPGs Acadêmicos de Filosofia por Gênero (1994-2022)",
-       subtitle = "**N**: 13.294 | <span style= 'color:#59106e;'>**Homem**</span>: 79.58% - <span style= 'color:#d24644;'>**Mulher**</span>: 20.42%",
+       title = "Proporção de Docentes Permanentes em PPGs de Filosofia por Gênero (1994-2022)",
+       subtitle = "**N**: 13.294 | <span style= 'color:#59106e;'>**Homem**</span>: 79.66% - <span style= 'color:#d24644;'>**Mulher**</span>: 20.34%",
        caption = "Elaboração: Dataphilo | Dados: CAPES") +
   theme(plot.title = element_markdown(face = "bold"),  
         plot.subtitle = element_markdown(hjust = 0.5),
         legend.position = "none",
-        text = element_text(size = 8)) +
-    facet_wrap(~NM_PROGRAMA)
+        text = element_text(size = 15)) 
   
 # Salvar gráfico
 ggsave(
-  "figs/graf2_academicos.png",
+  "figs/graf1_total.png",
   bg = "white",
   width = 11,
   height = 6,
@@ -99,13 +98,22 @@ bolsa <- dados |>
          variavel = "Bolsa PQ",
          categorias = fct_na_value_to_level(categorias, "Sem Bolsa"))
 
+# Tabela FORMAÇÃO 
+formacao <- dados |> 
+  group_by(FORMACAO, GENERO) |> 
+  summarize(total = n()) |> 
+  mutate(frequencia = round(total/sum(total)*100,2),
+         variavel = "Formação") |> 
+  rename(categorias = FORMACAO)
+
 # Junção das tabelas 
 tabela1 <- bind_rows(regiao,
                      categoria,
                      modalidade,
                      estatuto,
                      conceito,
-                     bolsa) 
+                     bolsa,
+                     formacao) 
 
 # Deixa tabela no formato
 tabela1 <- tabela1 |> tidyr::pivot_wider(names_from = "GENERO", values_from = c("total", "frequencia"), 
@@ -182,17 +190,17 @@ gtsave(tab1,
 # Tabela 02 - PPGs
 tabela2 <- dados |> 
   filter(NM_MODALIDADE_PROGRAMA == "Acadêmico" & DS_CATEGORIA_DOCENTE == "Permanente") |> 
-  group_by(NM_PROGRAMA, GENERO) |> 
+  group_by(NM_PROGRAMA, GENERO, FORMACAO) |> 
   summarize(total = n()) |> 
   mutate(frequencia = round(total/sum(total)*100,2)) |> 
   tidyr::pivot_wider(names_from = "GENERO",
                      values_from = c("total", "frequencia"), 
                      names_glue = "{GENERO}_{.value}") |> 
-  arrange(desc(Mulher_frequencia)) |> 
+ # arrange(desc(Mulher_frequencia)) |> 
   ungroup()
 
 # Construção Tabela 2
-tab2 <-
+tab3 <-
 tabela2 |> 
   gt(rowname_col  = "NM_PROGRAMA") |> 
   cols_merge(
@@ -203,7 +211,8 @@ tabela2 |>
     pattern = "{1} ({2}%)") |> 
   cols_label(
     Homem_total = "Homem",
-    Mulher_total = "Mulher") |> 
+    Mulher_total = "Mulher",
+    FORMACAO = "Formação") |> 
 fmt_number(
   drop_trailing_zeros = TRUE,
   decimals = 2,
@@ -238,6 +247,10 @@ fmt_number(
              Homem_total ~ px(100),
              Mulher_total ~ px(100)) |>  
   # opt_table_font(font = google_font(name = "Gentium Book Basic")) |> 
+  tab_footnote(
+    footnote = "Área de Conhecimento da última titulação. Filosofia: História da Filosofia, Metafísica, Lógica, Ética, Epistemologia, Filosofia Brasileira.",
+    locations = cells_column_labels(columns = FORMACAO)
+  ) |> 
   tab_options(heading.title.font.size = px(12),
               table.font.size = px(12),
               row_group.padding = px(1),
@@ -252,7 +265,7 @@ fmt_number(
   opt_table_lines("none")
 
 #Salvar
-gtsave(tab2, 
-       "docentes_tab2.png", 
+gtsave(tab3, 
+       "docentes-formacao_tab3.png", 
        path = "figs",
        expand = 20)
